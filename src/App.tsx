@@ -1,89 +1,97 @@
-
-import { useCallback } from 'react';
+import { useRef } from "react";
 
 import {
   ReactFlow,
   Background,
   Controls,
+  Panel,
   useNodesState,
   useEdgesState,
   addEdge,
   type Node,
   type Edge,
-  type Connection,
 } from '@xyflow/react';
 
-import '@xyflow/react/dist/style.css';
+import '@xyflow/react/dist/style.css'
 
-// 最初に表示するタスクとキュー
 const initialNodes: Node[] = [
   {
-    id: 'sensor',
-    type: 'input',
-    position: { x: 100, y: 0 },
-    data: { label: 'SensorTask' },
-    style: { background: '#dbeafe' },
-  },
-  {
-    id: 'queue',
-    position: { x: 100, y: 150 },
-    data: { label: 'sensorQueue' },
-    style: { background: '#fef3c7' },
-  },
-  {
-    id: 'control',
-    type: 'output',
-    position: { x: 100, y: 300 },
-    data: { label: 'ControlTask' },
-    style: { background: '#dbeafe' },
+    id: 'example',
+    position: { x: 100, y: 100},
+    data: { label: 'SensorTask'},
+    style: { background: '#dbeafe'},
   },
 ];
 
-// ノード間の接続
-const initialEdges: Edge[] = [
-  {
-    id: 'e1',
-    source: 'sensor',
-    target: 'queue',
-    label: 'xQueueSend',
-  },
-  {
-    id: 'e2',
-    source: 'queue',
-    target: 'control',
-    label: 'xQueueReceive',
-  },
-];
+const initialEdges: Edge[] = [];
 
-export default function App() {
-  const [nodes, , onNodesChange] =
-    useNodesState(initialNodes);
+function App() {
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const nextId = useRef(1);
+  const addNode = (kind: 'task' | 'queue') => {
+    const id = nextId.current++;
 
-  const [edges, setEdges, onEdgesChange] =
-    useEdgesState(initialEdges);
+    const newNode: Node = {
+      id: `${kind}-${id}`,
+      position: {
+        x: 100 + id*30,
+        y: 100 + id*30,
+      },
+      data: {
+        label: kind ==='task'
+          ? `Task${id}`
+          : `Queue${id}`,
+      },
+      style: {
+        background: kind === 'task'
+          ? '#dbeafe'
+          : '#fef3c7',
+      },
+    };
 
-  const onConnect = useCallback(
-    (connection: Connection) => {
-      setEdges((currentEdges) =>
-        addEdge(connection, currentEdges)
-      );
-    },
-    [setEdges]
-  );
+    setNodes((currentNodes) => [
+      ...currentNodes,
+      newNode,
+    ]);
+  };
 
   return (
-    <div style={{ width: '100vw', height: '100vh' }}>
+    <div style={{width: '100vw', height: '100vh'}}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
+        onConnect={(connection) => {
+          setEdges((currentEdges) =>
+            addEdge(connection, currentEdges)
+          );
+        }}
         fitView
       >
         <Background />
         <Controls />
+
+        <Panel position="top-left">
+          <div style={{
+            display: 'flex',
+            gap: '8px',
+            background: 'white',
+            padding: '10px',
+            borderRadius: '8px',
+          }}>
+            <button onClick={() => addNode('task')}>
+              + task
+            </button>
+            <button onClick={() => addNode('queue')}>
+              + queue
+            </button>
+          </div>
+        </Panel>
       </ReactFlow>
     </div>
   );
 }
+
+export default App;
